@@ -118,7 +118,9 @@ bool engine_init_allegro()
 
     our_eip = -199;
     // Initialize allegro
-    set_uformat(U_ASCII);
+    //set_uformat(U_ASCII);
+    // use utf8 encoding
+    set_uformat(U_UTF8);
     if (install_allegro(SYSTEM_AUTODETECT, &myerrno, atexit))
     {
         const char *al_err = get_allegro_error();
