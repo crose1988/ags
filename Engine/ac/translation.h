@@ -24,5 +24,7 @@ using AGS::Common::String;
 
 void close_translation ();
 bool init_translation (const String &lang, const String &fallback_lang, bool quit_on_error);
+bool init_chinaavg_translation (const String &lang, const String &fallback_lang, bool quit_on_error);
+bool init_chinaavg_untranslation (const String &lang);
 
 #endif // __AGS_EE_AC__TRANSLATION_H

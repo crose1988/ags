@@ -42,12 +42,29 @@ void split_lines_leftright(const char *todis, int wii, int fonnt) {
     int nextCharWas;
     int splitAt;
     char *theline;
+    
     // make a copy, since we change characters in the original string
     // and this might be in a read-only bit of memory
     char textCopyBuffer[STD_BUFFER_SIZE];
     strcpy(textCopyBuffer, todis);
     theline = textCopyBuffer;
 
+    // a new version with 3 byte chinese character support
+    // reference https://en.wikipedia.org/wiki/UTF-8#Description
+    int isUtf8 = 0;
+    while (1) {
+        if (theline[i] == 0)
+            break;
+        
+        if ((unsigned char)theline[i] >= 0x80) {
+            isUtf8 = 1;
+            break;
+        }
+
+        i++;
+    }
+
+    i = 0;
     while (1) {
         splitAt = -1;
 
@@ -62,27 +79,44 @@ void split_lines_leftright(const char *todis, int wii, int fonnt) {
         }
 
         // temporarily terminate the line here and test its width
-        nextCharWas = theline[i + 1];
-        theline[i + 1] = 0;
+        if (isUtf8 && (unsigned char)theline[i] >= 0x80) {
+            nextCharWas = theline[i + 3];
+            theline[i + 3] = 0;
+        } 
+        else {
+            nextCharWas = theline[i + 1];
+            theline[i + 1] = 0;
+        }
 
         // force end of line with the [ character (except if \[ )
         if ((theline[i] == '[') && ((i == 0) || (theline[i - 1] != '\\')))
             splitAt = i;
         // otherwise, see if we are too wide
-        else if (wgettextwidth_compensate(theline, fonnt) >= wii) {
+        else if (wgettextwidth_compensate(theline, fonnt) >= wii)  {
             int endline = i;
-            while ((theline[endline] != ' ') && (endline > 0))
-                endline--;
+            if (!isUtf8) {
+                while ((theline[endline] != ' ') && (endline > 0))
+                    endline--;
 
-            // single very wide word, display as much as possible
-            if (endline == 0)
-                endline = i - 1;
+                // single very wide word, display as much as possible
+                if (endline == 0)
+                    endline = i - 1;
+            }
+            else {
+                if ((unsigned char)theline[endline] >= 0x80)
+                    endline = endline - 4;
+                else
+                    endline--;
+            }
 
             splitAt = endline;
         }
 
         // restore the character that was there before
-        theline[i + 1] = nextCharWas;
+        if (isUtf8 && (unsigned char)theline[i] >= 0x80) 
+            theline[i + 3] = nextCharWas;
+        else 
+            theline[i + 1] = nextCharWas;
 
         if (splitAt >= 0) {
             // add this line
@@ -136,3 +170,4 @@ void fgetstring(char *sss, Common::Stream *in)
 {
     fgetstring_limit (sss, in, 50000000);
 }
+

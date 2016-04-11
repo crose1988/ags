@@ -159,6 +159,7 @@ void config_defaults()
 {
     // set default dir if no config file
     usetup.data_files_dir = ".";
+    usetup.chinaavg_dir = "./ChinaAVG";
 #ifdef WINDOWS_VERSION
     usetup.digicard = DIGI_DIRECTAMX(0);
 #endif
@@ -237,6 +238,8 @@ void read_config(const ConfigTree &cfg)
 #else
         usetup.data_files_dir.TrimRight('/');
 #endif
+        usetup.chinaavg_dir = usetup.data_files_dir.GetCStr();
+        usetup.chinaavg_dir.Append("/ChinaAVG");
         usetup.main_data_filename = INIreadstring(cfg, "misc", "datafile");
         usetup.user_data_dir = INIreadstring(cfg, "misc", "user_data_dir");
 

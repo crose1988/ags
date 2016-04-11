@@ -13,6 +13,7 @@
 //=============================================================================
 
 #define USE_CLIB
+#include <stdio.h>
 #include "ac/common.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
@@ -24,6 +25,7 @@
 #include "debug/out.h"
 #include "util/misc.h"
 #include "util/stream.h"
+#include "util/path.h"
 #include "core/assetmanager.h"
 
 using AGS::Common::Stream;
@@ -34,11 +36,13 @@ extern GameSetup usetup;
 extern GameSetupStruct game;
 extern GameState play;
 extern char transFileName[MAX_PATH];
-
+extern char *untransFileLoc;
 
 TreeMap *transtree = NULL;
+TreeMap *untranstree = NULL;
 long lang_offs_start = 0;
 char transFileName[MAX_PATH] = "\0";
+char *untransFileLoc = "\0";
 
 void close_translation () {
     if (transtree != NULL) {
@@ -48,6 +52,10 @@ void close_translation () {
 }
 
 bool parse_translation(Stream *language_file, String &parse_error);
+
+bool parse_chinaavg_translation(const char *language_file, String &parse_error);
+
+bool parse_chinaavg_untranslation(const char *language_file, String &parse_error);
 
 bool init_translation (const String &lang, const String &fallback_lang, bool quit_on_error) {
     char *transFileLoc;
@@ -123,6 +131,99 @@ bool init_translation (const String &lang, const String &fallback_lang, bool qui
     return true;
 }
 
+bool init_chinaavg_translation(const String &lang, const String &fallback_lang, bool quit_on_error) {
+    char *transFileLoc;
+
+    if (lang.IsEmpty()) {
+        sprintf(transFileName, "default.trs");
+    }
+    else {
+        sprintf(transFileName, "%s.trs", lang.GetCStr());
+    }
+
+    transFileLoc = ci_find_file(usetup.chinaavg_dir, transFileName);
+
+    if (!AGS::Common::Path::IsFile(transFileLoc)) {
+        Out::FPrint("Cannot open ChinaAVG translation: %s", transFileName);
+        free(transFileLoc);
+        return false;
+    }
+
+    if (transtree != NULL)
+    {
+        close_translation();
+    }
+    transtree = new TreeMap();
+
+    String parse_error;
+    bool result = parse_chinaavg_translation(AGS::Common::Path::MakeAbsolutePath(transFileLoc).GetCStr(), parse_error);
+    free(transFileLoc);
+
+    if (!result)
+    {
+        close_translation();
+        parse_error.Prepend(String::FromFormat("Failed to read ChinaAVG translation file: %s:\n", transFileName));
+        if (quit_on_error)
+        {
+            parse_error.PrependChar('!');
+            quit(parse_error);
+        }
+        else
+        {
+            Out::FPrint(parse_error);
+            if (!fallback_lang.IsEmpty())
+            {
+                Out::FPrint("Fallback to ChinaAVG translation: %s", fallback_lang.GetCStr());
+                init_chinaavg_translation(fallback_lang, "", false);
+            }
+            return false;
+        }
+    }
+    Out::FPrint("ChinaAVG translation initialized: %s", transFileName);
+    return true;
+}
+
+bool init_chinaavg_untranslation(const String &lang) {
+    char untransFileName[MAX_PATH];
+
+    if (lang.IsEmpty()) {
+        sprintf(untransFileName, "default_untrans.trs");
+    }
+    else {
+        sprintf(untransFileName, "%s_untrans.trs", lang.GetCStr());
+    }
+
+    untransFileLoc = ci_find_file(usetup.chinaavg_dir, untransFileName);
+
+    if (!AGS::Common::Path::IsFile(untransFileLoc)) {
+        Out::FPrint("Cannot open ChinaAVG untranslation: %s", untransFileName);
+        return false;
+    }
+
+    if (untranstree != NULL) {
+        delete untranstree;
+        untranstree = NULL;
+    }
+    untranstree = new TreeMap();
+    String parse_error;
+    bool result = parse_chinaavg_untranslation(AGS::Common::Path::MakeAbsolutePath(untransFileLoc).GetCStr(), parse_error);
+
+    if (!result)
+    {
+        if (untranstree != NULL) {
+            delete untranstree;
+            untranstree = NULL;
+        }
+        parse_error.Prepend(String::FromFormat("Failed to read ChinaAVG untranslation file: %s:\n", untransFileName));
+        Out::FPrint(parse_error);
+        return false;
+    }
+
+    Out::FPrint("ChinaAVG untranslation initialized: %s", untransFileName);
+    return true;
+
+}
+
 bool parse_translation(Stream *language_file, String &parse_error)
 {
     while (!language_file->EOS()) {
@@ -192,6 +293,70 @@ bool parse_translation(Stream *language_file, String &parse_error)
         parse_error = "The translation file was empty.";
         return false;
     }
+
+    return true;
+}
+
+bool parse_chinaavg_translation(const char *language_file, String &parse_error) {
+    bool isTrans = false;
+    char line[STD_BUFFER_SIZE];
+    String original, translation;
+    FILE *fp;   
+    if ((fp = fopen(language_file,"r")) == NULL) {
+        parse_error = "Can't open ChinaAVG translation file.";
+        return false;
+    }
+
+    while(!feof(fp)) {
+        fgets(line, STD_BUFFER_SIZE, fp);
+        if (!isTrans) {
+            original = line;
+            isTrans = true;
+            original.Trim();
+        } 
+        else {
+            translation = line;
+            isTrans = false;
+            translation.Trim();
+            char trans[STD_BUFFER_SIZE];
+            strcpy(trans, translation.GetCStr());
+            transtree->addText(original.GetCStr(), trans);
+        }
+    }
+    fclose(fp);  
+    
+    if (transtree->text == NULL)
+    {
+        parse_error = "The ChinaAVG translation file was empty.";
+        return false;
+    }
+
+    return true;
+}
+
+bool parse_chinaavg_untranslation(const char *language_file, String &parse_error) {
+    bool isTrans = false;
+    char line[STD_BUFFER_SIZE];
+    String original, translation;
+    FILE *fp;   
+    if ((fp = fopen(language_file,"r")) == NULL) {
+        parse_error = "Can't open ChinaAVG untranslation file.";
+        return false;
+    }
+
+    while(!feof(fp)) {
+        fgets(line, STD_BUFFER_SIZE, fp);
+        if (!isTrans) {
+            original = line;
+            isTrans = true;
+            original.Trim();
+        } 
+        else {
+            isTrans = false;
+            untranstree->addText(original.GetCStr(), "");
+        }
+    }
+    fclose(fp);  
 
     return true;
 }

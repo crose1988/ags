@@ -296,7 +296,12 @@ AssetError AssetManager::RegisterAssetLib(const String &data_file, const String 
     // read MultiFileLibrary header (CLIB)
     // PSP: allocate struct on the heap to avoid overflowing the stack.
     MFLUtil::MFLError mfl_err = MFLUtil::ReadHeader(_assetLib, in);
+    
     delete in;
+
+    printf("========libname======%s\n", _assetLib.BaseFileName.GetData());
+    for (int i=0; i<_assetLib.LibFileNames.size(); i++) 
+        printf("%s\n", _assetLib.LibFileNames[i].GetData());
 
     if (mfl_err != MFLUtil::kMFLNoError)
     {
