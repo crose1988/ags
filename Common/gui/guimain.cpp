@@ -494,7 +494,13 @@ void read_gui(Stream *in, GUIMain * guiread, GameSetupStruct * gss, GUIMain** al
   }
 
   for (ee = 0; ee < gss->numgui; ee++) {
-    if (guiread[ee].hit < 2)
+    // a quick fix after force to render font using freetype engine 
+    // dword character require bigger bitmap background to draw on
+    // default value is 95 * 10
+    if (strcmp(guiread[ee].name, "gTooltip") == 0) {
+      guiread[ee].wid = 150;
+      guiread[ee].hit = 20;
+    } else if (guiread[ee].hit < 2)
       guiread[ee].hit = 2;
 
     if (GameGuiVersion < kGuiVersion_unkn_103)

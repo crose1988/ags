@@ -118,7 +118,9 @@ bool engine_init_allegro()
 
     our_eip = -199;
     // Initialize allegro
-    set_uformat(U_ASCII);
+    //set_uformat(U_ASCII);
+    // use utf8 encoding
+    set_uformat(U_UTF8);
     if (install_allegro(SYSTEM_AUTODETECT, &myerrno, atexit))
     {
         const char *al_err = get_allegro_error();
@@ -1219,8 +1221,10 @@ void init_game_settings() {
     for (ee = 0; ee < MAX_SOUND_CHANNELS; ee++)
         last_sound_played[ee] = -1;
 
-    if (usetup.translation)
-        init_translation (usetup.translation, "", true);
+    if (usetup.translation) {
+        if (init_chinaavg_translation(usetup.translation, "", true))
+            init_chinaavg_untranslation(usetup.translation);
+    }
 
     update_invorder();
     displayed_room = -10;

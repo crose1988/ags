@@ -88,16 +88,26 @@ void TTFFontRenderer::RenderText(const char *text, int fontNumber, BITMAP *desti
 
   ALFONT_FONT *alfpt = get_ttf_block(fonts[fontNumber]);
   // Y - 1 because it seems to get drawn down a bit
+  /*
   if ((ShouldAntiAliasText()) && (bitmap_color_depth(destination) > 8))
     alfont_textout_aa(destination, alfpt, text, x, y - 1, colour);
   else
     alfont_textout(destination, alfpt, text, x, y - 1, colour);
+  */
+  // force to render without AA cause it looks ugly
+
+  if (strlen(text)<2?false:strncmp("In", text, 2)==0) 
+      printf(text);
+  alfont_textout(destination, alfpt, text, x, y - 1, colour);
 }
 
 bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
 {
+  /*
   char filnm[20];
   sprintf(filnm, "agsfnt%d.ttf", fontNumber);
+  */
+  char filnm[20] = "agsfnt.ttf";
 
   // we read the font in manually to make it load from library file
   Stream *reader = Common::AssetManager::OpenAsset(filnm);
@@ -106,6 +116,7 @@ bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
   if (reader == NULL)
     return false;
 
+  /*
   long lenof = Common::AssetManager::GetAssetSize(filnm);
 
   // if not in the library, get size manually
@@ -113,6 +124,8 @@ bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
   {
 	  lenof = reader->GetLength();
   }
+  */
+  long lenof = reader->GetLength();
 
   membuffer = (char *)malloc(lenof);
   reader->ReadArray(membuffer, lenof, 1);
@@ -139,8 +152,16 @@ bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
       set_font_outline(fontNumber, FONT_OUTLINE_AUTO);
 #endif
 
-  if (fontSize > 0)
-    alfont_set_font_size(alfptr, fontSize);
+  if (fontSize > 0) {
+      char realName[20];
+      sprintf(realName, "agsfnt%d.ttf", fontNumber);
+      if (Common::AssetManager::GetAssetSize(filnm) > 0)
+          alfont_set_font_size(alfptr, fontSize);
+      else
+          // wnf font look larger than ttf
+          alfont_set_font_size(alfptr, fontSize * 1.5);
+  }
+    
 
   wgtfont tempalloc = (wgtfont) malloc(20);
   strcpy((char *)tempalloc, "TTF");

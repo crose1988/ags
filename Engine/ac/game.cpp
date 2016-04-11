@@ -943,11 +943,13 @@ int Game_ChangeTranslation(const char *newFilename)
     String oldTransFileName;
     oldTransFileName = transFileName;
 
-    if (!init_translation(newFilename, oldTransFileName.LeftSection('.'), false))
+    if (!init_chinaavg_translation(newFilename, oldTransFileName.LeftSection('.'), false))
     {
         strcpy(transFileName, oldTransFileName);
         return 0;
     }
+    else
+        init_chinaavg_untranslation(newFilename);
 
     return 1;
 }
