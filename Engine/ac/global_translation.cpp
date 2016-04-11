@@ -39,7 +39,7 @@ char *get_translation (const char *text) {
         return (char*)text;
     // get_tanslation is called twice for same text
     // which means game try to translate the translation text
-    // i don't know why
+    // i don't know why (i know it now, bu no quick idea to avoid that)
     int i;
     for (i=0; i<strlen(text); i++) {
         if (text[i] == 0)

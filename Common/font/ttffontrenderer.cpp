@@ -95,9 +95,6 @@ void TTFFontRenderer::RenderText(const char *text, int fontNumber, BITMAP *desti
     alfont_textout(destination, alfpt, text, x, y - 1, colour);
   */
   // force to render without AA cause it looks ugly
-
-  if (strlen(text)<2?false:strncmp("In", text, 2)==0) 
-      printf(text);
   alfont_textout(destination, alfpt, text, x, y - 1, colour);
 }
 
